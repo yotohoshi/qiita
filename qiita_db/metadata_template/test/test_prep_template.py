@@ -810,8 +810,8 @@ class TestPrepTemplate(TestCase):
         exp = [['1.SKB8.640193'], ['1.SKD8.640184']]
         self.assertEqual(obs, exp)
 
-    def _common_creation_checks(self, pt, fp_count):
-        # The returned object has the correct id
+    def _common_creation_checks(self, pt, fp_count, name):
+        self.assertEqual(pt.name, name)
         self.assertEqual(pt.data_type(), self.data_type)
         self.assertEqual(pt.data_type(ret_id=True), self.data_type_id)
         self.assertEqual(pt.artifact, None)
@@ -881,15 +881,25 @@ class TestPrepTemplate(TestCase):
         """Creates a new PrepTemplate"""
         fp_count = qdb.util.get_count('qiita.filepath')
         pt = qdb.metadata_template.prep_template.PrepTemplate.create(
-            self.metadata, self.test_study, self.data_type)
-        self._common_creation_checks(pt, fp_count)
+            self.metadata, self.test_study, self.data_type,
+            name='New Prep For Test')
+        self._common_creation_checks(pt, fp_count, "New Prep For Test")
 
     def test_create_already_prefixed_samples(self):
         """Creates a new PrepTemplate"""
         fp_count = qdb.util.get_count('qiita.filepath')
         pt = qdb.metadata_template.prep_template.PrepTemplate.create(
             self.metadata_prefixed, self.test_study, self.data_type)
-        self._common_creation_checks(pt, fp_count)
+        self._common_creation_checks(pt, fp_count,
+                                     "Prep information %s" % pt.id)
+
+    def test_empty_prep(self):
+        """Creates a new PrepTemplate"""
+        metadata = pd.DataFrame.from_dict(
+            {'SKB8.640193': {}, 'SKD8.640184': {}}, orient='index', dtype=str)
+        with self.assertRaises(ValueError):
+            qdb.metadata_template.prep_template.PrepTemplate.create(
+                metadata, self.test_study, self.data_type)
 
     def test_generate_files(self):
         fp_count = qdb.util.get_count("qiita.filepath")
@@ -923,7 +933,8 @@ class TestPrepTemplate(TestCase):
         fp_count = qdb.util.get_count('qiita.filepath')
         pt = qdb.metadata_template.prep_template.PrepTemplate.create(
             self.metadata, self.test_study, self.data_type_id)
-        self._common_creation_checks(pt, fp_count)
+        self._common_creation_checks(pt, fp_count,
+                                     "Prep information %s" % pt.id)
 
     def test_create_warning(self):
         """Warns if a required columns is missing for a given functionality
@@ -1161,7 +1172,7 @@ class TestPrepTemplate(TestCase):
             [qdb.metadata_template.constants.PREP_TEMPLATE_COLUMNS['EBI'],
              qdb.metadata_template.constants.PREP_TEMPLATE_COLUMNS_TARGET_GENE[
                 'demultiplex']])
-        self.assertEqual(obs, {'primer'})
+        self.assertEqual(obs, set())
 
     def test_artifact(self):
         """Returns the artifact associated with the prep template"""
@@ -1482,6 +1493,14 @@ class TestPrepTemplate(TestCase):
         pt = qdb.metadata_template.prep_template.PrepTemplate(2)
         with self.assertRaises(QE.QiitaDBOperationNotPermittedError):
             pt.delete_sample('1.SKM5.640177')
+
+    def test_name_setter(self):
+        pt = qdb.metadata_template.prep_template.PrepTemplate(1)
+        self.assertEqual(pt.name, 'Prep information 1')
+        pt.name = 'New Name'
+        self.assertEqual(pt.name, 'New Name')
+        pt.name = 'Prep information 1'
+        self.assertEqual(pt.name, 'Prep information 1')
 
 
 EXP_PREP_TEMPLATE = (
