@@ -39,7 +39,7 @@
           <tr>
             <td colspan="3">
               <div class="blinking-message">
-                <div id="uploader_status">~~ Uploading ~~</div>
+                <div id="uploader_status"></div>
                 Keep track of your upload or pause/resume it! <span class="glyphicon glyphicon-arrow-up"></span>
                 <br/>
                 <small>Your upload won't be interrupted if you change networks or you close your computer, just make sure you don't leave this page. </small>
@@ -50,7 +50,7 @@
       </div>
 
       <hr>
-      <h3><u>Uploaded files</u></h3>
+      <h3><u>Files</u></h3>
       <br/>
       <form method="post" id="delete-files-form">
         <div class="uploader-list" style="display:none;">
@@ -94,7 +94,7 @@
     })(jQuery);
 
   {% for dirid, filename in files %}
-    uploader.addFile({ "dirid": "{{dirid}}", "fileName": "{{filename}}" });
+    uploader.addFile({ "dirid": "{{dirid}}", "fileName": "{{filename}}", "uploaded": "True" });
   {% end  %}
 </script>
 

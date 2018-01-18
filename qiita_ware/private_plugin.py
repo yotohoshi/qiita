@@ -43,7 +43,8 @@ def build_analysis_files(job):
                                   'artifact_type': 'BIOM',
                                   'provenance': dumps({'job': job.id,
                                                        'data_type': dtype}),
-                                  'analysis': analysis_id})
+                                  'analysis': analysis_id,
+                                  'template': None})
             val_jobs.append(qdb.processing_job.ProcessingJob.create(
                 analysis.owner, validate_params, True))
 
@@ -310,7 +311,7 @@ def delete_study(job):
 
 
 def complete_job(job):
-    """Deletes a sample or a column from the metadata
+    """Completes a job
 
     Parameters
     ----------
@@ -333,6 +334,12 @@ def complete_job(job):
             c_job._set_error(traceback.format_exception(*exc_info()))
 
         job._set_status('success')
+
+    if 'archive' in payload:
+        pass
+        # ToDo: Archive
+        # features = payload['archive']
+        # here we should call the method from the command to archive
 
 
 def delete_analysis(job):

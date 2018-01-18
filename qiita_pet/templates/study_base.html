@@ -6,36 +6,6 @@
 <link rel="stylesheet" src="{% raw qiita_config.portal_dir %}/static/vendor/css/vis-network.min.css" type="text/css">
 <script type="text/javascript" src="{% raw qiita_config.portal_dir %}/static/vendor/js/vis.min.js"></script>
 <script type="text/javascript">
-  var network = null;
-  // Track what prep template is currently being shown.
-  var curr_prep = -1;
-  function togglegraphs(id) {
-    if($("#study-prep-graph-row").css('display') == 'none' ) {
-      $("#study-prep-graph-row").show();
-      $("#graph-toggle-link").text("Hide files");
-    } else {
-      $("#study-prep-graph-row").hide();
-       $("#graph-toggle-link").text("Show files");
-    }
-  }
-
-  function fill_artifact(aid) {
-    $("#study-main").html("<p><button onclick='process_from(" + aid + ")' class='btn btn-sm'>Process from here</button></p>ARTIFACT " + aid + " HTML STUFF");
-  $.get("{% raw qiita_config.portal_dir %}/admin/artifact/", {artifact_id: +aid })
-      .done(function ( data ) {
-        $("#study-admin").html(data);
-      });
-  }
-
-  function process_from(aid) {
-    $.get("{% raw qiita_config.portal_dir %}/study/process/", { artifact_id: aid })
-      .done(function ( data ){
-        $("#study-prep-graph-row").hide();
-        $("#graph-toggle-link").text("Show files");
-        $("#study-main").html(data);
-      });
-  }
-
   function validate_delete_study_text() {
     if ($("#study-alias").val() == "{% raw study_title_msg %}") {
       $('#delete-study-button').prop('disabled', false);
@@ -125,15 +95,8 @@
     <div class="col-md-3">
       <button class="btn btn-default btn-block" onclick="populate_main_div('{% raw qiita_config.portal_dir %}/study/description/baseinfo/', { study_id: {{study_info['study_id']}} })"><span class="glyphicon glyphicon-info-sign"></span> Study Information</button>
       <button class="btn btn-default btn-block" onclick="populate_main_div('{% raw qiita_config.portal_dir %}/study/description/sample_template/', { study_id: {{study_info['study_id']}} })"><span class="glyphicon glyphicon-info-sign"></span> Sample Information</button>
-      {% if editable %}
-        <a class="btn btn-default btn-block" href="{% raw qiita_config.portal_dir %}/study/upload/{{study_info['study_id']}}"><span class="glyphicon glyphicon-upload"></span> Upload Files</a>
-        <button class="btn btn-default btn-block" onclick="populate_main_div('{% raw qiita_config.portal_dir %}/study/new_prep_template/', { study_id: {{study_info['study_id']}} })" id="add-new-preparation-btn"><span class="glyphicon glyphicon-plus-sign"></span> Add New Preparation</button>
-      {% end %}
       {% if study_info['show_biom_download_button'] %}
         <a class="btn btn-default btn-block" href="{% raw qiita_config.portal_dir %}/download_study_bioms/{{study_info['study_id']}}"><span class="glyphicon glyphicon-download-alt"></span> All QIIME maps and BIOMs</a>
-      {% end %}
-      {% if study_info['has_access_to_raw_data'] and study_info['show_raw_download_button'] %}
-        <a class="btn btn-default btn-block" href="{% raw qiita_config.portal_dir %}/download_raw_data/{{study_info['study_id']}}"><span class="glyphicon glyphicon-download-alt"></span> All raw data</a>
       {% end %}
       <div style="text-align: center;"><small><a href="{% raw qiita_config.portal_dir %}/static/doc/html/faq.html#how-to-solve-unzip-errors">Issues opening the downloaded zip?</a></small></div>
 

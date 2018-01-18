@@ -2,6 +2,39 @@
 // trigger some functions from other elements
 var processingNetwork = null;
 
+
+/**
+ *
+ * Function to format the node labels so they don't overlap
+ *
+ * @param label str The node label
+ *
+ **/
+function formatNodeLabel(label) {
+  // After trying different values, 35 looks like a good value that will not make
+  // the labels overlap in the network.
+  var limit = 35;
+  // Split the input string by the space characters
+  var labelArray = label.split(' ');
+  // Variable holding the new label
+  var newLabel = labelArray[0];
+  var aux;
+  var lastNewLineIdx = 0;
+  // Note that the for loop starts with 1 because we have already used the
+  // first word
+  for (var i = 1; i < labelArray.length; i++) {
+    aux = newLabel + ' ' + labelArray[i];
+    if (aux.substr(lastNewLineIdx).length > limit) {
+      // We need to split the label here
+      lastNewLineIdx = newLabel.length;
+      newLabel = newLabel + '\n' + labelArray[i];
+    } else {
+      newLabel = newLabel + ' ' + labelArray[i];
+    }
+  }
+  return newLabel;
+};
+
 /**
  *
  * Toggle the graph view
@@ -23,10 +56,29 @@ Vue.component('processing-graph', {
   template: '<div class="row">' +
               '<div class="row" id="network-header-div">' +
                 '<div class="col-md-12">' +
-                  '<h4><a class="btn btn-info" id="show-hide-network-btn" onclick="toggleNetworkGraph();">Hide</a><i> Processing network </i></h4>' +
-                  'Graph interaction: <a class="btn btn-danger" id="interaction-btn">Disabled</a></br>' +
-                  '<div id="run-btn-div"><a class="btn btn-success" id="run-btn"><span class="glyphicon glyphicon-play"></span> Run workflow</a><span class="blinking-message">  Don\'t forget to hit "Run" once you are done with your workflow!</span></div>' +
-                  '<b>Click circles for more information - This graph will refresh in <span id="countdown-span"></span> seconds or reload <a href="#" id="refresh-now-link">now</a></b>' +
+                  // Processing Network header and Show/hide button
+                  '<div class="row">' +
+                    '<div class="col-md-2">' +
+                      '<h4>Processing network</h4>' +
+                    '</div>' +
+                    '<div class="col-md-1">' +
+                      '<a class="btn btn-info form-control" id="show-hide-network-btn" onclick="toggleNetworkGraph();">Hide</a>' +
+                    '</div>' +
+                  '</div>' +
+                  // Run workflow button
+                  '<div class="row" id="run-btn-div">' +
+                    '<div class="col-md-2">' +
+                      '<h4><span class="blinking-message">Start workflow:</h4></span>' +
+                    '</div>' +
+                    '<div class="col-md-1">' +
+                      '<a class="btn btn-success form-control" id="run-btn"><span class="glyphicon glyphicon-play"></span> Run</a>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="row">' +
+                    '<div class="col-md-12">' +
+                      '<b>Click on the graph to navigate through it. Click circles for more information. This graph will refresh in <span id="countdown-span"></span> seconds or reload <a href="#" id="refresh-now-link">now</a></b>' +
+                    '</div>' +
+                  '</div>' +
                 '</div>' +
               '</div>' +
               '<div class="row">' +
@@ -39,7 +91,7 @@ Vue.component('processing-graph', {
                 '</div>' +
               '</div>' +
               '<div class="row">' +
-                '<div class="col-md-12" style="width:90%" id="processing-results">' +
+                '<div class="col-md-12" style="width:90%; padding-left: 30px" id="processing-results">' +
                 '</div>' +
               '</div>' +
             '</div>',
@@ -47,38 +99,14 @@ Vue.component('processing-graph', {
   methods: {
     /**
      *
+     * Resets the zoom view of the graph
+     *
      **/
     resetZoom: function () {
       let vm = this;
       if (vm.network !== undefined && vm.network !== null) {
         vm.network.fit();
       }
-    },
-    /**
-     *
-     * Enables/Disables the interaction with the graph
-     **/
-    toggleGraphInteraction: function () {
-      let vm = this;
-      var options;
-      if ($('#interaction-btn').hasClass('btn-danger')) {
-        $('#interaction-btn').removeClass('btn-danger').addClass('btn-success').html('Enabled');
-        options = {interaction: { dragNodes: false,
-                                      dragView: true,
-                                      zoomView: true,
-                                      selectConnectedEdges: true,
-                                      navigationButtons: true,
-                                      keyboard: false}};
-      } else {
-        $('#interaction-btn').removeClass('btn-success').addClass('btn-danger').html('Disabled');
-        options = {interaction: { dragNodes: false,
-                                  dragView: false,
-                                  zoomView: false,
-                                  selectConnectedEdges: false,
-                                  navigationButtons: false,
-                                  keyboard: false}};
-      }
-      vm.network.setOptions(options);
     },
 
     /**
@@ -127,24 +155,42 @@ Vue.component('processing-graph', {
             jobStatus = value[0]['job_status'];
             jobNode = vm.nodes_ds.get(jobId);
 
-            // If the job is in one of the "running" states, we add it to the runningJobs list
-            if (jobStatus === 'running' || jobStatus === 'queued' || jobStatus === 'waiting') {
-              vm.runningJobs.push(jobId);
-            }
-
-            if (jobNode['status'] !== jobStatus) {
-              // The status of the job changed.
-              // we decide what to do based on the new status.
+            if (jobNode === null) {
+              // A network node does not exist for this job, this is because this
+              // job is a job deleting an artifact
               if (jobStatus === 'success' || jobStatus === 'error') {
-                // If the job succeeded or failed, we need to reset the entire graph
-                // because the changes on the nodes are substantial
+                // The jobs finished, in any of the two finishing states we need
+                // to update the graph
                 needsUpdate = true;
+                if (jobStatus === 'error') {
+                  // If the job didn't complete successfully, we need to show the
+                  // error to the user
+                  bootstrapAlert(value[0]['job_error'], "danger");
+                }
               } else {
-                // In this case the job changed to either 'running', 'queued' or 'waiting'. In
-                // this case, we just need to update the internal values of the nodes and the colors
-                jobNode.color = vm.colorScheme[jobStatus];
-                jobNode.status = jobStatus;
-                vm.nodes_ds.update(jobNode);
+                // The job is still running
+                vm.runningJobs.push(jobId);
+              }
+            } else {
+              // If the job is in one of the "running" states, we add it to the runningJobs list
+              if (jobStatus === 'running' || jobStatus === 'queued' || jobStatus === 'waiting') {
+                vm.runningJobs.push(jobId);
+              }
+
+              if (jobNode['status'] !== jobStatus) {
+                // The status of the job changed.
+                // we decide what to do based on the new status.
+                if (jobStatus === 'success' || jobStatus === 'error') {
+                  // If the job succeeded or failed, we need to reset the entire graph
+                  // because the changes on the nodes are substantial
+                  needsUpdate = true;
+                } else {
+                  // In this case the job changed to either 'running', 'queued' or 'waiting'. In
+                  // this case, we just need to update the internal values of the nodes and the colors
+                  jobNode.color = vm.colorScheme[jobStatus];
+                  jobNode.status = jobStatus;
+                  vm.nodes_ds.update(jobNode);
+                }
               }
             }
           });
@@ -156,6 +202,30 @@ Vue.component('processing-graph', {
         });
       }
     },
+
+    /**
+     *
+     * Deletes an artifact from the network
+     *
+     **/
+    deleteArtifact: function(artifactId) {
+      let vm = this;
+      $.post(vm.portal + '/artifact/' + artifactId + '/', function(data) {
+        // Clean up the div
+        $("#processing-results").empty();
+        // Update the artifact node to mark that it is being deleted
+        var node = vm.nodes_ds.get(artifactId);
+        node.group = 'deleting';
+        node.color = vm.colorScheme['deleting']
+        vm.nodes_ds.update(node);
+        // Add the job to the list of jobs to check for deletion.
+        vm.runningJobs.push(data.job);
+      })
+       .fail(function(object, status, error_msg) {
+         bootstrapAlert('Error deleting artifact: ' + object.statusText.replace("\n", "<br/>"), danger);
+       })
+    },
+
     /**
      *
      * Remove a job node from the network visualization
@@ -319,6 +389,10 @@ Vue.component('processing-graph', {
         // Add the job step
         if (data['job_step'] !== null) {
           rowsContent.push(['Current step:', data['job_step']]);
+        }
+
+        if (data['job_status'] === 'error' && data['job_error'] !== null) {
+          rowsContent.push(['Error message:', data['job_error']]);
         }
 
         // Create the DOM elements to add the rows content
@@ -531,61 +605,81 @@ Vue.component('processing-graph', {
      *
      * Generates the GUI for selecting the commands to apply to the given artifacts
      *
-     * @param p_nodes list The ids of the selected artifacts
+     * @param p_node str The id of the selected artifact
      *
      * This function executes an AJAX call to retrieve all the commands that can
      * process the selected artifacts. It generates the interface so the user
      * can select which command should be added to the workflow
      *
      **/
-    loadArtifactType: function(p_nodes) {
+    loadArtifactType: function(p_node) {
       let vm = this;
       var types = [];
       var sel_artifacts_info = {};
-      var node;
+      var node, nodeIdSplit, $rowDiv, $colDiv;
       var target = $("#processing-results");
 
-      for(var i=0; i < p_nodes.length; i++) {
-        node = vm.nodes_ds.get(p_nodes[i]);
-        if(types.indexOf(node.type) === -1) {
-          types.push(node.type);
-        }
-        sel_artifacts_info[node.id] = {'type': node.type, 'name': node.label}
-      }
-      $.get(vm.portal + '/study/process/commands/', {artifact_types: types, include_analysis: vm.isAnalysisPipeline})
-        .done(function (data) {
-          target.empty();
+      // We need to differentiate between the artifact type nodes that are part
+      // of the current in construction workflow of if the node is from a
+      // previous workflow. If it is from a previous workflow, no new commands
+      // can be added. This is due to assumptions done on different sections
+      // of the code that are not easy to remove. The easiest way to identify
+      // the type of artifact type node is by checking the job that is
+      // generating this artifact type.
+      p_node = String(p_node);
+      nodeIdSplit = p_node.split(':');
+      node = vm.nodes_ds.get(p_node);
+      if (nodeIdSplit.length < 2 || vm.nodes_ds.get(nodeIdSplit[0]).status === 'in_construction') {
+        // This means that either we are going to process a new artifact (nodeIdSplit.length < 2)
+        // or that the parent job generating this artifact type node is in construction.
+        // In both of this cases, we can add a new job to the workflow
+        types.push(node.type);
+        sel_artifacts_info[node.id] = {'type': node.type, 'name': node.label};
 
-          // Create the command select dropdown
-          var $rowDiv = $('<div>').addClass('row').addClass('form-group').appendTo(target);
-          $('<label>').addClass('col-sm-2').addClass('col-form-label').text('Choose command:').appendTo($rowDiv).attr('for', 'command-sel');
-          var $colDiv = $('<div>').addClass('col-sm-3').appendTo($rowDiv);
-          var sel = $('<select>').appendTo($colDiv).attr('id', 'command-sel').attr('name', 'command').addClass('form-control').attr('placeholder', 'Choose command...');
-          sel.append($("<option>").attr('value', "").text("Choose command...").prop('disabled', true).prop('selected', true));
-          var commands = data.commands;
-          commands.sort(function(a, b) {return a.command.localeCompare(b.command, 'en', {'sensitivity': 'base'});} );
-          for(var i=0; i<commands.length; i++) {
-            if (commands[i].output.length !== 0) {
-              sel.append($("<option>").attr('value', commands[i].id).text(commands[i].command));
+        $.get(vm.portal + '/study/process/commands/', {artifact_types: types, include_analysis: vm.isAnalysisPipeline})
+          .done(function (data) {
+            target.empty();
+
+            // Create the command select dropdown
+            $rowDiv = $('<div>').addClass('row').addClass('form-group').appendTo(target);
+            $('<label>').addClass('col-sm-2').addClass('col-form-label').text('Choose command:').appendTo($rowDiv).attr('for', 'command-sel');
+            $colDiv = $('<div>').addClass('col-sm-3').appendTo($rowDiv);
+            var sel = $('<select>').appendTo($colDiv).attr('id', 'command-sel').attr('name', 'command').addClass('form-control').attr('placeholder', 'Choose command...');
+            sel.append($("<option>").attr('value', "").text("Choose command...").prop('disabled', true).prop('selected', true));
+            var commands = data.commands;
+            commands.sort(function(a, b) {return a.command.localeCompare(b.command, 'en', {'sensitivity': 'base'});} );
+            for(var i=0; i<commands.length; i++) {
+              if (commands[i].output.length !== 0) {
+                sel.append($("<option>").attr('value', commands[i].id).text(commands[i].command));
+              }
             }
-          }
-          sel.change(function(event) {
-            $("#cmd-opts-div").empty();
-            $("#add-cmd-btn-div").hide();
-            var v = $("#command-sel").val();
-            if (v !== "") {
-              vm.loadCommandOptions(v, sel_artifacts_info);
-            }
+            sel.change(function(event) {
+              $("#cmd-opts-div").empty();
+              $("#add-cmd-btn-div").hide();
+              var v = $("#command-sel").val();
+              if (v !== "") {
+                vm.loadCommandOptions(v, sel_artifacts_info);
+              }
+            });
+
+            // Create the div in which the command options will be shown
+            $('<div>').appendTo(target).attr('id', 'cmd-opts-div').attr('name', 'cmd-opts-div');
+
+            // Create the add command button - but not show it yet
+            var $rowDiv = $('<div hidden>').addClass('row').addClass('form-group').appendTo(target).attr('id', 'add-cmd-btn-div').attr('name', 'add-cmd-btn-div');
+            var $colDiv = $('<div>').addClass('col-sm-2').appendTo($rowDiv);
+            $('<button>').appendTo($colDiv).addClass('btn btn-info').text('Add Command').click(function() {vm.addJob();});
           });
-
-          // Create the div in which the command options will be shown
-          $('<div>').appendTo(target).attr('id', 'cmd-opts-div').attr('name', 'cmd-opts-div');
-
-          // Create the add command button - but not show it yet
-          var $rowDiv = $('<div hidden>').addClass('row').addClass('form-group').appendTo(target).attr('id', 'add-cmd-btn-div').attr('name', 'add-cmd-btn-div');
-          var $colDiv = $('<div>').addClass('col-sm-2').appendTo($rowDiv);
-          $('<button>').appendTo($colDiv).addClass('btn btn-info').text('Add Command').click(function() {vm.addJob();});
-        });
+      } else {
+        target.empty();
+        $('<h4>').append('Future result: ' + node.label).appendTo(target);
+        $rowDiv = $('<div>').addClass('row').addClass('form-group').appendTo(target);
+        $('<label>').addClass('col-sm-1').addClass('col-form-label').text('Generated by:').appendTo($rowDiv);
+        $colDiv = $('<div>').addClass('col-sm-3').appendTo($rowDiv).append(vm.nodes_ds.get(nodeIdSplit[0]).label + ' (' + nodeIdSplit[0] + ')');
+        $rowDiv = $('<div>').addClass('row').addClass('form-group').appendTo(target);
+        $('<label>').addClass('col-sm-1').addClass('col-form-label').text('Output name:').appendTo($rowDiv);
+        $colDiv = $('<div>').addClass('col-sm-3').appendTo($rowDiv).append(nodeIdSplit[1]);
+      }
     },
 
     /**
@@ -606,13 +700,13 @@ Vue.component('processing-graph', {
       $(job_info.inputs).each(function(){
         vm.edges_ds.add({id: vm.edges_ds.length + 1, from: this, to: job_info.id});
       });
-      vm.nodes_ds.add({id: job_info.id, group: "job", label: job_info.label, color: vm.colorScheme.in_construction, status: 'in_construction'});
+      vm.nodes_ds.add({id: job_info.id, group: "job", label: formatNodeLabel(job_info.label), color: vm.colorScheme.in_construction, status: 'in_construction'});
       $(job_info.outputs).each(function(){
         var out_name = this[0];
         var out_type = this[1];
         var n_id = job_info.id + ":" + out_name;
         vm.edges_ds.add({id: vm.edges_ds.length + 1, from: job_info.id, to: n_id });
-        vm.nodes_ds.add({id: n_id, label: out_name + "\n(" + out_type + ")", group: "type", name: out_name, type: out_type});
+        vm.nodes_ds.add({id: n_id, label: formatNodeLabel(out_name + "\n(" + out_type + ")"), group: "type", name: out_name, type: out_type});
       });
       vm.network.redraw();
     },
@@ -661,10 +755,10 @@ Vue.component('processing-graph', {
         },
         interaction: {
           dragNodes: false,
-          dragView: false,
-          zoomView: false,
-          selectConnectedEdges: false,
-          navigationButtons: false,
+          dragView: true,
+          zoomView: true,
+          selectConnectedEdges: true,
+          navigationButtons: true,
           keyboard: false
         },
         groups: {
@@ -690,13 +784,16 @@ Vue.component('processing-graph', {
         var clickedNode = vm.nodes_ds.get(ids)[0];
         var element_id = ids[0];
         if (clickedNode.group == 'artifact') {
-          vm.populateContentArtifact(element_id, target_details);
+          vm.populateContentArtifact(element_id);
+        } else if (clickedNode.group == 'deleting') {
+          $("#processing-results").empty();
+          $("#processing-results").append("<h4>This artifact is being deleted</h4>");
         } else {
           var ei = element_id.split(':');
           if (ei.length == 2) {
-            vm.loadArtifactType([element_id], false, target_details);
+            vm.loadArtifactType(element_id);
           } else {
-            vm.populateContentJob(element_id, target_details);
+            vm.populateContentJob(element_id);
           }
         }
       });
@@ -862,7 +959,7 @@ Vue.component('processing-graph', {
           }
           // Format node list data
           for(var i = 0; i < data.nodes.length; i++) {
-            vm.nodes.push({id: data.nodes[i][2], label: data.nodes[i][3], type: data.nodes[i][1], group: data.nodes[i][0], color: vm.colorScheme[data.nodes[i][4]], status: data.nodes[i][4]});
+            vm.nodes.push({id: data.nodes[i][2], label: formatNodeLabel(data.nodes[i][3]), type: data.nodes[i][1], group: data.nodes[i][0], color: vm.colorScheme[data.nodes[i][4]], status: data.nodes[i][4]});
             if (data.nodes[i][1] === 'job') {
               job_status = data.nodes[i][4];
               if (job_status === 'in_construction') {
@@ -977,14 +1074,13 @@ Vue.component('processing-graph', {
       'queued': {border: '#4f5b66', background: '#a7adba', highlight: {border: '#4f5b66', background: '#c0c5ce'}},
       'waiting': {border: '#4f5b66', background: '#a7adba', highlight: {border: '#4f5b66', background: '#c0c5ce'}},
       'artifact': {border: '#BBBBBB', background: '#FFFFFF', highlight: {border: '#999999', background: '#FFFFFF'}},
-      'type': {border: '#BBBBBB', background: '#CCCCCC', highlight: {border: '#999999', background: '#DDDDDD'}}};
+      'type': {border: '#BBBBBB', background: '#CCCCCC', highlight: {border: '#999999', background: '#DDDDDD'}},
+      'deleting': {border: '#ff3333', background: '#ff6347', highlight: {border: '#ff3333', background: '#ff6347'}}};
     show_loading('processing-network-div');
     $("#processing-network-div").hide();
 
     $('#run-btn').on('click', function() { vm.runWorkflow(); });
     $('#run-btn-div').hide();
-
-    $('#interaction-btn').on('click', vm.toggleGraphInteraction);
 
     $('#refresh-now-link').on('click', function () {
       vm.countdownPoll = 15;

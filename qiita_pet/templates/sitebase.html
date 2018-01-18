@@ -31,11 +31,12 @@
     <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/jquery-ui.theme.min.css" type="text/css">
     <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/bootstrap-theme.min.css" type="text/css">
+    <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/bootstrap-toggle.min.css" type="text/css">
     <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/chosen.css" type="text/css">
     <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/jquery.dataTables.min.css" type="text/css">
     <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/css/style.css" type="text/css">
-    <link rel="stylesheet" src="{% raw qiita_config.portal_dir %}/static/vendor/css/vis.min.css" type="text/css">
-    <link rel="stylesheet" src="{% raw qiita_config.portal_dir %}/static/vendor/css/vis-network.min.css" type="text/css">
+    <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/vis.min.css" type="text/css">
+    <link rel="stylesheet" href="{% raw qiita_config.portal_dir %}/static/vendor/css/vis-network.min.css" type="text/css">
     {% if portal_styling.custom_css %}
     <style type="text/css">
       {% raw portal_styling.custom_css %}
@@ -44,12 +45,14 @@
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/jquery-2.1.0.min.js"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/jquery-ui.min.js"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/bootstrap.min.js"></script>
+    <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/bootstrap-toggle.min.js"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/chosen.jquery.min.js"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/jquery.dataTables.min.js" type="text/javascript"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/vue.min.js"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/js/qiita.js"></script>
     <script src="{% raw qiita_config.portal_dir %}/static/vendor/js/vis.min.js"></script>
     <script type="text/javascript" src="{% raw qiita_config.portal_dir %}/static/js/networkVue.js"></script>
+    <script type="text/javascript" src="{% raw qiita_config.portal_dir %}/static/js/sampleTemplateVue.js"></script>
 
     <link rel="shortcut icon" href="{% raw qiita_config.portal_dir %}/static/img/favicon.ico">
 
@@ -337,7 +340,7 @@
               <li>
                 <!-- qiita logo -->
                 <a class="navbar-brand" rel="home" href="{% raw qiita_config.portal_dir %}/" title="{{portal_styling.title}}">
-                  <img style="max-width:100px; margin-top: -7px;" src="{% raw qiita_config.portal_dir %}{{portal_styling.logo}}">
+                  <img style="max-width:120px; margin-top: -3px;" src="{% raw qiita_config.portal_dir %}{{portal_styling.logo}}">
                 </a>
               </li>
               <!-- analysis menu -->
@@ -353,7 +356,6 @@
               <li class="dropdown">
                 <a href="#" data-toggle="dropdown" class="dropdown-toggle">Study<b class="caret"></b></a>
                 <ul class="dropdown-menu">
-                  <li><a href="{% raw qiita_config.portal_dir %}/study/create/">Create Study</a></li>
                   <li><a href="{% raw qiita_config.portal_dir %}/study/list/">View Studies</a></li>
                 </ul>
               </li>
@@ -477,33 +479,6 @@
                 </ul>
               </li>
             </ul>
-            <ul class="nav navbar-nav">
-              <li>
-                <a href="https://github.com/biocore/qiita/blob/master/README.rst#current-features">Current and Future Features</a>
-              </li>
-            </ul>
-            <ul class="nav navbar-nav">
-              <li>
-                <a href="{% raw qiita_config.portal_dir %}/redbiom/">Redbiom</a>
-              </li>
-            </ul>
-            <ul class="nav navbar-nav">
-              <!-- downloads -->
-              <li class="dropdown">
-                <a href="#" data-toggle="dropdown" class="dropdown-toggle">Downloads<b class="caret"></b></a>
-                <ul class="dropdown-menu">
-                  <li>
-                    <a type="button" data-toggle="modal" data-target=".qiita_pet_download_confirm">
-                      Public BIOM and metadata files
-                      <small>
-                        <br/><b>MD5:</b> {{public_md5}}
-                        <br/><b>Last update:</b> {{public_timestamp}}
-                      </small>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
           </div> <!--/.navbar-collapse -->
         </div>
       </div> <!--/.main nav-bar -->
@@ -546,11 +521,11 @@
     </div> <!--/.main nav-bar -->
 
       <div id="footer" style="font-size: 12px; text-align: center; z-index: 1000;">
-        Thank you for using Qiita. For citations point to <a href="http://qiita.microbio.me">http://qiita.microbio.me</a>.
+        Thank you for using Qiita.
         <br/>
-        Questions? <a href="mailto:qiita.help@gmail.com">qiita.help@gmail.com</a>
+        For citations point to <a href="http://qiita.microbio.me">http://qiita.microbio.me</a>.
         <br/>
-        Read our <a href="{% raw qiita_config.portal_dir %}/static/qiita_data_terms_of_use.html">terms and conditions</a>.
+        <a href="https://ibdmdb.org/support">Questions?</a>
       </div>
       <div id="overlay" class="navbar-brand" style="visibility: hidden; position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; font-size: 13px; text-align: center; z-index: 1000; background-color: #333333; color: #FFFFFF;">
           <img src="{% raw qiita_config.portal_dir %}{{portal_styling.logo}}" alt="Qiita logo" id="small-logo"/>
