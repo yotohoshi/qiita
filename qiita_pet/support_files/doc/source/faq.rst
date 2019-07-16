@@ -90,10 +90,26 @@ A few more instructions: for the example above the workflow should be:
 
 .. _issues_unzip:
 
-How to solve unzip errors?
---------------------------
+How to solve download or unzip errors?
+--------------------------------------
 
-When downloading large zip files within Qiita there is a change that you will get
+Dealing with large files might be daunting but, in general, following these
+instructions should make things easier. First, make sure that you have enough space
+for the zip download file; if you are unsure of the size required click on the button
+and your browser will show an estimate size of the download.
+Second, make sure that your computer has all the sleep settings turned off;
+for example, in a Mac, got to System Preferences, Energy Saver, Power Adapter and unselect
+the option of "Put hard disks to sleep when possible"; don't forget to save the settings.
+Third, download the file but point to the storage that you want to save your file in; using
+Chrome, right click on the download button and select "Save Link As ..."; and select the
+location where you have enough space (see point 1). Fourth, wait for the download to finish,
+this will depend on your Internet service. Finally, unzip the file with a newer version
+of zip (see below).
+
+By the way, if you are a developer and would like to add to Qiita the possibility of resumable
+downloads, we would happily welcome this contribution.
+
+Now, when trying to open the large downloaded zip file there is a change that you will get
 an error like: **"start of central directory not found; zipfile corrupt"**. This issue
 arises from using old versions of zip and you need to have unzip >= 6.0.0. To check
 you unzip version you can run: `unzip -v`.
@@ -153,7 +169,23 @@ How to convert Qiita files to QIIME2 artifacts?
 -----------------------------------------------
 
 Please visit the `Transferring Qiita Artifacts to Qiime2 Tutorial <https://forum.qiime2.org/t/transferring-qiita-artifacts-to-qiime2/4790>`__
-in the `QIIME2 forum <https://forum.qiime2.org>`__.
+in the `QIIME2 forum <https://forum.qiime2.org>`__. Note that all feature table (bioms) and analytical steps will generate qza and qzv, which are QIIME2 artifacts.
+
+
+How to download raw or all BIOM files from a given study?
+---------------------------------------------------------
+
+We provide direct access to public data via a single end point. This end point can be used to download BIOMs or raw data,
+in specific (do not forget to replace `study-id` and/or `data_type` for your study or data type of interest ):
+
+- All raw data: https://qiita.ucsd.edu/public_download/?data=raw&study_id=study-id
+
+- All BIOMs + mapping files: https://qiita.ucsd.edu/public_download/?data=biom&study_id=study-id
+
+- Only 16S raw data: https://qiita.ucsd.edu/public_download/?data=raw&study_id=study-id&data_type=16S
+
+- Only Metagenomic BIOMs + mapping files: https://qiita.ucsd.edu/public_download/?data=biom&study_id=study-id&data_type=Metagenomic
+
 
 How to cite Qiita?
 ------------------
