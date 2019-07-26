@@ -118,6 +118,18 @@ To update your unzip for most operating systems you can simply use your regular 
 admin program. However, for Mac we suggest using
 `this version of unzip <ftp://ftp.microbio.me/pub/qiita/unzip>`__.
 
+Additionally, there is a chance that you will see an error/warning message like this:
+``extracting: BIOM/57457/all.biom bad CRC f6b2a86b (should be 38903659)``. These
+messages are consequence of the zip library we are using internally and are fine to
+ignore. If you want to check them, we suggest taking any of the files and generating their
+CRC32 checksum; in MAC's you can run ``crc32 [filename]`` and should get the first number
+in that message; for example:
+
+.. code-block:: bash
+
+   $ crc32 57457_all.biom
+   f6b2a86b
+
 Do you have general analytical questions?
 -----------------------------------------
 
@@ -169,7 +181,23 @@ How to convert Qiita files to QIIME2 artifacts?
 -----------------------------------------------
 
 Please visit the `Transferring Qiita Artifacts to Qiime2 Tutorial <https://forum.qiime2.org/t/transferring-qiita-artifacts-to-qiime2/4790>`__
-in the `QIIME2 forum <https://forum.qiime2.org>`__.
+in the `QIIME2 forum <https://forum.qiime2.org>`__. Note that all feature table (bioms) and analytical steps will generate qza and qzv, which are QIIME2 artifacts.
+
+
+How to download raw or all BIOM files from a given study?
+---------------------------------------------------------
+
+We provide direct access to public data via a single end point. This end point can be used to download BIOMs or raw data,
+in specific (do not forget to replace `study-id` and/or `data_type` for your study or data type of interest ):
+
+- All raw data: https://qiita.ucsd.edu/public_download/?data=raw&study_id=study-id
+
+- All BIOMs + mapping files: https://qiita.ucsd.edu/public_download/?data=biom&study_id=study-id
+
+- Only 16S raw data: https://qiita.ucsd.edu/public_download/?data=raw&study_id=study-id&data_type=16S
+
+- Only Metagenomic BIOMs + mapping files: https://qiita.ucsd.edu/public_download/?data=biom&study_id=study-id&data_type=Metagenomic
+
 
 How to cite Qiita?
 ------------------
